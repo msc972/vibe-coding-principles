@@ -83,25 +83,27 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 24. **(SHOULD) Measurable rules** — enforce consistency with linters and static analysis (formatting, complexity, security checks).
 
+25. **(MUST) No agent shortcuts** — code produced or modified must implement complete, correct behavior (no token or cost-saving stubs, hacks, or obfuscated one-liners). Mocks must be pre-agreeed with users.
+
 ## Secrets & PII hygiene
 
-25. **(MUST) Never commit secrets or credentials** — no API keys, tokens, passwords, or private keys in the repo.
+26. **(MUST) Never commit secrets or credentials** — no API keys, tokens, passwords, or private keys in the repo.
 
-26. **(MUST) Never commit PII** — no names, emails, SSNs, phone numbers, or addresses in the repo.
+27. **(MUST) Never commit PII** — no names, emails, SSNs, phone numbers, or addresses in the repo.
 
-27. **(MUST) No hardcoded environment-specific data** — no absolute paths, hostnames, or endpoints baked into source.
+28. **(MUST) No hardcoded environment-specific data** — no absolute paths, hostnames, or endpoints baked into source.
 
-28. **(MUST) Load secrets at runtime** — from a vault or environment variables; never stored in the repo. `.env` always in `.gitignore`; commit a `.env.example` with placeholder values (`API_KEY=your-key-here`) as the template.
+29. **(MUST) Load secrets at runtime** — from a vault or environment variables; never stored in the repo. `.env` always in `.gitignore`; commit a `.env.example` with placeholder values (`API_KEY=your-key-here`) as the template.
 
-29. **(MUST) Mask/redact secrets and PII** — in logs and CI output.
+30. **(MUST) Mask/redact secrets and PII** — in logs and CI output.
 
 ## Robustness
 
-30. **(MUST) Validate at boundaries** — trust internal code, validate at system boundaries (user input, HTTP requests, file formats, CLI args, env vars, data from external APIs and databases). Reject malformed input early with clear error messages (pairs with #15). Do not re-validate values that have already crossed a trusted boundary — that's noise (violates #1 KISS).
+31. **(MUST) Validate at boundaries** — trust internal code, validate at system boundaries (user input, HTTP requests, file formats, CLI args, env vars, data from external APIs and databases). Reject malformed input early with clear error messages (pairs with #15). Do not re-validate values that have already crossed a trusted boundary — that's noise (violates #1 KISS).
 
 ## Supply chain
 
-31. **Pin and lock versions.** Prevents auto-pulling malicious new versions (a common supply-chain vector) and makes builds reproducible.
+32. **Pin and lock versions.** Prevents auto-pulling malicious new versions (a common supply-chain vector) and makes builds reproducible.
     - **(MUST) Pin every direct dependency to an exact version** — `==1.2.3` in `requirements.txt`, exact in `pyproject.toml`, etc.
     - **(MUST) Commit the resolved lockfile** — `uv.lock`, `poetry.lock`, `pip-tools`-generated `requirements.lock`, `package-lock.json`, `Cargo.lock` — so transitive deps are also frozen.
     - **(MUST) Update lockfiles deliberately**, in isolated commits, with reviewable diffs.
@@ -109,7 +111,7 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 ## Testing practice
 
-32. **Test with intent, not for coverage theater.**
+33. **Test with intent, not for coverage theater.**
     - **(MUST) Test behavior, not implementation.** Tests must survive refactors; if a no-behavior-change refactor breaks them, they're bound to internals.
     - **(SHOULD) High branch/condition coverage** as a floor (typical target 80%+; higher for critical paths). Coverage alone is not sufficient — see the next two.
     - **(SHOULD) Verify test strength with mutation testing.** Tools: `mutmut` / `cosmic-ray` (Python), `stryker` (JS/TS). Target ≥80% mutation kill rate. Run pre-merge or on CI schedule; scope to changed files for local runs (slow for per-commit).

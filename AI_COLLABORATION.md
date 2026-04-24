@@ -77,7 +77,3 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 12. **(MUST) Ask, don't guess, on non-trivial decisions.** When a request is ambiguous and multiple plausible interpretations exist, surface them and let the human choose. Silent assumption-making compounds: a guess made early can shape an entire implementation before anyone notices.
 
 13. **(SHOULD) Prefer minimal questions over a long one.** When clarifying, ask the one or two questions whose answers actually unblock you — not an exhaustive survey.
-
-## When this breaks down
-
-If you notice the AI violating any of these — silently capitulating, padding work, leaking context, skipping confirmations, fabricating results — name it explicitly. The rules only hold if someone enforces them; the AI can't reliably self-police without a human partner who calls it out.

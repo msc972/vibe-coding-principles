@@ -9,15 +9,15 @@ and wait for an explicit "yes" before proceeding. See the section
 
 Two companion documents for building software well, especially with AI coding assistants — plus a drop-in enforcement config.
 
-- **[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md)** — *what good code looks like.* 32 principles covering design, readability, testing, security, and supply chain. Language-agnostic.
-- **[AI_COLLABORATION.md](AI_COLLABORATION.md)** — *how humans and AI assistants should work together.* 13 norms covering intellectual honesty, transparency, privacy, destructive-action safety, and testing discipline.
+- **[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md)** — *what good code looks like.* principles covering design, readability, testing, security, and supply chain. Language-agnostic.
+- **[AI_COLLABORATION.md](AI_COLLABORATION.md)** — *how humans and AI assistants should work together.* norms covering intellectual honesty, transparency, privacy, destructive-action safety, and testing discipline.
 - **[pre-commit-config.template.yaml](pre-commit-config.template.yaml)** — reusable pre-commit config for Python projects that mechanically enforces much of ENGINEERING_PRINCIPLES.md (lint, type, security, CVE scan, secrets, pinning).
 
 Both `.md` files use RFC 2119 severity tags — **MUST / SHOULD / MAY** — so teams can argue about the right axis (is this a hard rule or a default?) instead of relitigating semantics every review.
 
 ## Why two files?
 
-Code quality and collaboration quality are different problems. ENGINEERING_PRINCIPLES.md would be roughly the same rules in 2015 or 2030 — it's evergreen. AI_COLLABORATION.md is specifically about the failure modes that emerge when an LLM is writing, reviewing, or refactoring alongside you: tautological tests, silent capitulation under review pressure, secret leaks into prompts, surprise rewrites. Keeping them separate lets each evolve at its own pace.
+Code quality and collaboration quality are different problems. ENGINEERING_PRINCIPLES.md helps building projects with high standards. AI_COLLABORATION.md is specifically about the failure modes that emerge when an LLM is writing, reviewing, or refactoring alongside you: tautological tests, silent capitulation under review pressure, secret leaks into prompts, surprise rewrites. Keeping them separate lets each evolve at its own pace.
 
 ## Usage
 

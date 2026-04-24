@@ -20,14 +20,14 @@
 # dependency lockfile bump (principle #31). Do not add `autoupdate` to routine CI.
 #
 # Enforces principles from ./ENGINEERING_PRINCIPLES.md:
-#   ruff          -> principles 7-11, 23, 24 (naming, style, nesting, complexity)
-#   mypy          -> principles 13, 15       (testable design, clear errors)
-#   bandit        -> principle 15            (general security anti-patterns)
-#   detect-secrets-> principle 25            (no secrets in repo)
-#   pip-audit     -> principle 31            (known-CVE scan on pinned deps)
+#   ruff          -> principles (naming, style, nesting, complexity)
+#   mypy          -> principles (testable design, clear errors)
+#   bandit        -> principles (general security anti-patterns)
+#   detect-secrets-> principles (no secrets in repo)
+#   pip-audit     -> principles (known-CVE scan on pinned deps)
 #   core hygiene  -> trailing whitespace, large files, merge markers, private keys
 #
-# Principle 32 (testing practice) is enforced outside pre-commit:
+# Principle 'Testing practice' is enforced outside pre-commit:
 #   mutation testing -> pre-merge / CI schedule (mutmut / cosmic-ray / stryker)
 #   property-based   -> plugs into the test runner (hypothesis / proptest / fast-check)
 
