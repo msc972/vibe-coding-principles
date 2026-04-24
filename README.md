@@ -21,7 +21,18 @@ Code quality and collaboration quality are different problems. ENGINEERING_PRINC
 
 ## Usage
 
-Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream.
+Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact.
+
+```
+# Engineering Practices
+
+Before making design decision or code changes, consult the relevant practice doc:
+
+- `.claude/practices/AI_COLLABORATION.md`
+- `.claude/practices/ENGINEERING_PRINCIPLES.md`
+
+Always read the applicable doc before implementing; don't rely on assumed knowledge
+```
 
 ## Locking these files against AI drift
 
