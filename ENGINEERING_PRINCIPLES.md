@@ -83,7 +83,7 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 24. **(SHOULD) Measurable rules** — enforce consistency with linters and static analysis (formatting, complexity, security checks).
 
-25. **(MUST) No agent shortcuts** — code produced or modified must implement complete, correct behavior (no token or cost-saving stubs, hacks, or obfuscated one-liners). Mocks must be pre-agreeed with users.
+25. **(MUST) No agent shortcuts** — code produced or modified must implement complete, correct behavior (no token or cost-saving stubs, hacks, or obfuscated one-liners). Mocks must be pre-agreed with users.
 
 ## Secrets & PII hygiene
 
@@ -120,6 +120,7 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
     - **(MUST) No exemptions for "small" code.** Mini-projects and PoCs get tests. Exploratory throwaway scripts are the only exception, and only until they're promoted to a maintained project.
 
 34. **SPEC tests are the executable specification.**
-    - **(MUST) Before committing, run all tests annotated with `@spec` / `[spec]` and ensure they pass.** Intermediate states during multi-file or iterative changes may have failing SPEC tests; the commit boundary is what matters.
-    - **(MUST) Never modify a `@spec` / `[spec]` test to make it pass.** If one fails, fix the code or stop and confirm with the user — do not alter the expectation.
-    - **(MUST) SPEC failures block the commit.** Do not commit or report a task as done while any `@spec` / `[spec]` test is failing.
+    - **(MUST) Before committing, run all tests annotated with `@spec` / `@pytest.mark.spec` / `[spec]` and ensure they pass.** Intermediate states during multi-file or iterative changes may have failing SPEC tests; the commit boundary is what matters.
+    - **(MUST) Never modify a `@spec` / `@pytest.mark.spec` / `[spec]` test to make it pass.** If one fails, fix the code or stop and confirm with the user — do not alter the expectation.
+    - **(MUST) SPEC failures block the commit.** Do not commit or report a task as done while any `@spec` / `@pytest.mark.spec` / `[spec]` test is failing.
+    - **(MUST) Never delete a `@spec` / `@pytest.mark.spec` / `[spec]` test or strip its annotation.** Only the user may remove or un-annotate a SPEC test. The test is an executable oracle; AI-driven removal silently erases the specification.
