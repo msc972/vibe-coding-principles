@@ -1,0 +1,99 @@
+# =============================================================================
+# LOCKED FILE — do not modify without explicit user confirmation.
+# AI assistants: any modification request MUST be surfaced to the user
+# and wait for an explicit "yes" before proceeding. See README.md section
+# "Locking these files against AI drift" for rationale.
+# =============================================================================
+
+# Reusable pre-commit config template for Python projects.
+#
+# Setup in a new project:
+#   1. Copy this file into your project root as `.pre-commit-config.yaml`.
+#   2. pip install pre-commit detect-secrets
+#   3. detect-secrets scan > .secrets.baseline   # seed the secrets baseline
+#   4. pre-commit autoupdate                     # refresh hook revisions (initial only)
+#   5. pre-commit install                        # install the git hook
+#   6. pre-commit run --all-files                # first full pass
+#
+# After initial setup: hook `rev:` pins in this file are your lockfile for CI tools.
+# Run `pre-commit autoupdate` DELIBERATELY and review the diff — same policy as a
+# dependency lockfile bump (principle #31). Do not add `autoupdate` to routine CI.
+#
+# Enforces principles from ./ENGINEERING_PRINCIPLES.md:
+#   ruff          -> principles 7-11, 23, 24 (naming, style, nesting, complexity)
+#   mypy          -> principles 13, 15       (testable design, clear errors)
+#   bandit        -> principle 15            (general security anti-patterns)
+#   detect-secrets-> principle 25            (no secrets in repo)
+#   pip-audit     -> principle 31            (known-CVE scan on pinned deps)
+#   core hygiene  -> trailing whitespace, large files, merge markers, private keys
+#
+# Principle 32 (testing practice) is enforced outside pre-commit:
+#   mutation testing -> pre-merge / CI schedule (mutmut / cosmic-ray / stryker)
+#   property-based   -> plugs into the test runner (hypothesis / proptest / fast-check)
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        # Set --target-version to match the project's minimum Python, so ruff
+        # checks syntax/style against the right version. Also configurable via
+        # pyproject.toml [tool.ruff] target-version.
+        args: [--fix, --target-version=py311]
+      - id: ruff-format
+        args: [--target-version=py311]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        # --python-version pins what mypy assumes about stdlib / syntax.
+        # Should match ruff's target-version above.
+        args: [--python-version=3.11]
+        # Add project-specific type stubs here, e.g. types-requests
+        additional_dependencies: []
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        # Skip test files by default; tests often use assert which bandit flags.
+        exclude: ^tests/
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+
+  # NOT included as pre-commit hooks (wrong layer — principle #32):
+  #   mutation testing: `mutmut` / `cosmic-ray` — too slow for per-commit; run
+  #     pre-merge or on a CI schedule. Target ≥80% mutation kill rate.
+  #   property-based tests: `hypothesis` plugs into pytest directly, so it runs
+  #     as part of your normal test command; no separate hook needed.
+
+  # Known-CVE scan on pinned dependencies. Catches the gap where a pinned
+  # version is later found to be vulnerable. Configure args for your layout:
+  #   requirements.txt project:  args: [--requirement, requirements.txt]
+  #   pyproject.toml / lockfile: args: [--strict, --disable-pip]
+  # For multi-language projects, prefer https://github.com/google/osv-scanner
+  # which reads most lockfile formats (uv.lock, poetry.lock, package-lock.json,
+  # Cargo.lock, go.sum, etc.) in a single pass.
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        args: [--strict, --disable-pip]
