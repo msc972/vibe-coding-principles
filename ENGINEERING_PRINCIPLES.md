@@ -99,7 +99,7 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 ## Robustness
 
-31. **(MUST) Validate at boundaries** — trust internal code, validate at system boundaries (user input, HTTP requests, file formats, CLI args, env vars, data from external APIs and databases). Reject malformed input early with clear error messages (pairs with #15). Do not re-validate values that have already crossed a trusted boundary — that's noise (violates #1 KISS).
+31. **(MUST) Validate at boundaries** — trust internal code, validate at system boundaries (user input, HTTP requests, file formats, CLI args, env vars, data from external APIs and databases). Reject malformed input early with clear error messages. Do not re-validate values that have already crossed a trusted boundary — that's noise (violates KISS).
 
 ## Supply chain
 
@@ -113,7 +113,13 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 33. **Test with intent, not for coverage theater.**
     - **(MUST) Test behavior, not implementation.** Tests must survive refactors; if a no-behavior-change refactor breaks them, they're bound to internals.
+    - **(MAY) Test Driven Development** Generate tests from the behavior spec / contract, before any implementation exists. Only user can annotate test with SPEC attribute.
     - **(SHOULD) High branch/condition coverage** as a floor (typical target 80%+; higher for critical paths). Coverage alone is not sufficient — see the next two.
     - **(SHOULD) Verify test strength with mutation testing.** Tools: `mutmut` / `cosmic-ray` (Python), `stryker` (JS/TS). Target ≥80% mutation kill rate. Run pre-merge or on CI schedule; scope to changed files for local runs (slow for per-commit).
     - **(SHOULD) Use property-based tests** for anything with a non-trivial input domain (parsers, validators, serializers, math). Tools: `hypothesis` (Python), `proptest` (Rust), `fast-check` (JS). Forces thinking in invariants and is much harder to write tautologically than example-based tests.
     - **(MUST) No exemptions for "small" code.** Mini-projects and PoCs get tests. Exploratory throwaway scripts are the only exception, and only until they're promoted to a maintained project.
+
+34. **SPEC tests are the executable specification.**
+    - **(MUST) Before committing, run all tests annotated with `@spec` / `[spec]` and ensure they pass.** Intermediate states during multi-file or iterative changes may have failing SPEC tests; the commit boundary is what matters.
+    - **(MUST) Never modify a `@spec` / `[spec]` test to make it pass.** If one fails, fix the code or stop and confirm with the user — do not alter the expectation.
+    - **(MUST) SPEC failures block the commit.** Do not commit or report a task as done while any `@spec` / `[spec]` test is failing.

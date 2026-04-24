@@ -21,9 +21,16 @@ Code quality and collaboration quality are different problems. ENGINEERING_PRINC
 
 ## Usage
 
-Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact.
+Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact. Annotate test method with spec attribute for Behavior/Specification tests and those tests will not be modified by AI.
 
 ```
+# Locked files
+
+Some files in this repo are locked from AI modification. A PreToolUse hook enforces this automatically.
+
+- **Locked directories**: files under `vibe-coding-principles/` require explicit user approval before any edit.
+- **Specification-locked tests**: any file containing a method annotated with case insensitive `@spec` (Python/Java/Kotlin/TS) / @pytest.mark.spec (Pytest) or `[spec]` (.NET) must not be modified. If blocked, stop and ask the user — don't try workarounds.
+
 # Engineering Practices
 
 Before making design decision or code changes, consult the relevant practice doc:
@@ -56,7 +63,7 @@ For Claude Code: add a `PreToolUse` hook in your user `settings.json` that match
         "hooks": [
           {
             "type": "command",
-            "command": "fp=$(jq -r \".tool_input.file_path // empty\"); case \"$fp\" in /<path_to_projects>/vibe-coding-principles/*) jq -cn --arg p \"$fp\" \"{hookSpecificOutput:{hookEventName:\\\"PreToolUse\\\",permissionDecision:\\\"deny\\\",permissionDecisionReason:(\\\"LOCKED FILE: \\\" + \\$p + \\\" — in the locked vibe-coding-principles directory. Explicit user approval required before modification. See the repo README section on locking.\\\")}}\" ;; esac"
+            "command": "python .claude/hooks/pre_edit_guard.py"
           }
         ]
       }

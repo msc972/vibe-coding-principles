@@ -62,13 +62,13 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 ## Testing with AI
 
-9. **(MUST) Recognize the tautological-test risk.** When the same AI context writes both implementation and tests, tests tend to drift toward asserting what the code *does* instead of what it *should do*. The human's specification — not the implementation — is the oracle.
+9. **(MUST) Recognize the tautological-test risk.** When the same AI context writes both implementation and tests, tests tend to drift toward asserting what the code *does* instead of what it *should do*. The human's specification — not the implementation — is the truth.
 
 10. **(SHOULD) Write tests from the spec first, before implementation.**
     - Generate tests from the behavior spec / contract, before any implementation exists.
-    - Get human approval on the tests as the external oracle.
+    - Get human approval on the tests as the external verifier. Only user can annotate test with BDD attribute.
     - Only then implement against the approved tests.
-    - If this ordering isn't practical, lean on implementation-author-agnostic backstops (mutation testing, property-based testing — see ENGINEERING_PRINCIPLES.md #32).
+    - If this ordering isn't practical, lean on implementation-author-agnostic backstops (mutation testing, property-based testing — see ENGINEERING_PRINCIPLES.md).
 
 11. **(MUST) Never weaken a test to make it pass.** If a test fails after a code change, either the change is wrong or the test was wrong — decide which. Don't split the difference by loosening the assertion.
 
