@@ -29,7 +29,7 @@ Drop these files into your team's central repo, or reference them as living team
 Some files in this repo are locked from AI modification. A PreToolUse hook enforces this automatically.
 
 - **Locked directories**: files under `vibe-coding-principles/` require explicit user approval before any edit.
-- **Specification-locked tests**: any file containing a method annotated with case insensitive `@spec` (Python/Java/Kotlin/TS) / @pytest.mark.spec (Pytest) or `[spec]` (.NET) must not be modified. If blocked, stop and ask the user — don't try workarounds.
+- **Specification-locked tests**: any file containing a method annotated with case insensitive `@spec` (Python/Java/Kotlin/TS) / `@pytest.mark.spec` (Pytest) or `[spec]` (.NET) must not be modified. If blocked, stop and ask the user — don't try workarounds.
 
 # Engineering Practices
 
