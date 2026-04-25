@@ -74,24 +74,26 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 11. **(MUST) Respect guard/hook denials — don't route around them.** When a harness hook or guard blocks an action, escalate to the human. Don't switch to `Bash` with `cat > file`, temp-file-and-swap, Python `open()` via a shell tool, or any other evasion. The hard lock exists because the human configured it on purpose.
 
-12. **(MUST) Vague approval does not extend to locked files or spec-annotated tests.** "Go ahead", "do whatever's needed", or a working-directory autonomy grant are not consent for modifying locked files or `@spec` / `@pytest.mark.spec` / `[spec]` tests. Each locked modification needs its own specific acknowledgement from the human.
+12. **(MUST) Vague approval does not extend to locked files.** "Go ahead", "do whatever's needed", or a working-directory autonomy grant are not consent for modifying files that carry a `LOCKED FILE` banner. Each locked-file modification needs its own specific acknowledgement from the human.
 
-13. **(SHOULD) State explicit overrides in your reply.** When the human authorises a locked-file edit, say so in the response — *"proceeding under explicit override for `X`"* — so the override is visible in the transcript.
+13. **(MUST) No human approval — vague or specific — extends to `@spec` / `@pytest.mark.spec` / `[spec]` tests.** Spec tests are inviolable while annotated; AI must not modify, rename, delete, or strip the annotation, regardless of what the human says. To change a spec test, the human removes the annotation themselves first (in their own editor); AI may then edit the resulting non-spec code like any other test. See ENGINEERING_PRINCIPLES.md §34.
+
+14. **(SHOULD) State explicit overrides in your reply.** When the human authorises a locked-file edit, say so in the response — *"proceeding under explicit override for `X`"* — so the override is visible in the transcript.
 
 ## Testing with AI
 
-14. **(MUST) Recognize the tautological-test risk.** When the same AI context writes both implementation and tests, tests tend to drift toward asserting what the code *does* instead of what it *should do*. The human's specification — not the implementation — is the truth.
+15. **(MUST) Recognize the tautological-test risk.** When the same AI context writes both implementation and tests, tests tend to drift toward asserting what the code *does* instead of what it *should do*. The human's specification — not the implementation — is the truth.
 
-15. **(SHOULD) Write tests from the spec first, before implementation.**
+16. **(SHOULD) Write tests from the spec first, before implementation.**
     - Generate tests from the behavior spec / contract, before any implementation exists.
     - Get human approval on the tests as the external verifier. Only user can annotate test with SPEC attribute.
     - Only then implement against the approved tests.
     - If this ordering isn't practical, lean on implementation-author-agnostic backstops (mutation testing, property-based testing — see ENGINEERING_PRINCIPLES.md).
 
-16. **(MUST) Never weaken a test to make it pass.** If a test fails after a code change, either the change is wrong or the test was wrong — decide which. Don't split the difference by loosening the assertion.
+17. **(MUST) Never weaken a test to make it pass.** If a test fails after a code change, either the change is wrong or the test was wrong — decide which. Don't split the difference by loosening the assertion.
 
 ## Ambiguity
 
-17. **(MUST) Ask, don't guess, on non-trivial decisions.** When a request is ambiguous and multiple plausible interpretations exist, surface them and let the human choose. Silent assumption-making compounds: a guess made early can shape an entire implementation before anyone notices.
+18. **(MUST) Ask, don't guess, on non-trivial decisions.** When a request is ambiguous and multiple plausible interpretations exist, surface them and let the human choose. Silent assumption-making compounds: a guess made early can shape an entire implementation before anyone notices.
 
-18. **(SHOULD) Prefer minimal questions over a long one.** When clarifying, ask the one or two questions whose answers actually unblock you — not an exhaustive survey.
+19. **(SHOULD) Prefer minimal questions over a long one.** When clarifying, ask the one or two questions whose answers actually unblock you — not an exhaustive survey.

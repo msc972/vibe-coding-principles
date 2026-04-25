@@ -2,12 +2,20 @@
 """PreToolUse guard: deny edits in locked dirs and to spec-annotated test files."""
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from typing import NoReturn
 
-LOCKED_DIRS = ["vibe-coding-principles"]
+# Comma-separated directory names from CLAUDE_LOCKED_DIRS env var, or default.
+# Configure via shell or the `env` field of your settings.json.
+DEFAULT_LOCKED_DIRS = "vibe-coding-principles"
+LOCKED_DIRS = [
+    d.strip()
+    for d in os.environ.get("CLAUDE_LOCKED_DIRS", DEFAULT_LOCKED_DIRS).split(",")
+    if d.strip()
+]
 # @spec, @pytest.mark.spec, [spec] — case insensitive
 SPEC = re.compile(
     r"(?<![A-Za-z0-9_])@spec(?![A-Za-z0-9_])"
@@ -62,5 +70,6 @@ if resolved.is_file() and SPEC.search(
     deny(
         f"SPECIFICATION-TESTS-LOCKED: {file_path} contains "
         f"@spec / @pytest.mark.spec / [spec] tests. "
-        f"Do not modify without user approval."
+        f"AI must not modify these — even with user approval. "
+        f"The human must remove the annotation themselves first."
     )

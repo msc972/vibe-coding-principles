@@ -23,7 +23,7 @@ Code quality and collaboration quality are different problems. ENGINEERING_PRINC
 
 ## Usage
 
-Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact. Annotate test method with spec attribute for Behavior/Specification tests and those tests will not be modified by AI.
+Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact. Annotate test methods with spec attribute for Behavior/Specification tests and those tests will not be modified by AI.
 
 ```
 # Locked files
@@ -35,7 +35,7 @@ Some files in this repo are locked from AI modification. A PreToolUse hook enfor
 
 # Engineering Practices
 
-Before making design decision or code changes, consult the relevant practice doc:
+Before making design decisions or code changes, consult the relevant practice doc:
 
 - `.claude/practices/AI_COLLABORATION.md`
 - `.claude/practices/ENGINEERING_PRINCIPLES.md`
@@ -53,7 +53,7 @@ Two complementary layers of protection:
 
 If your AI tool supports pre-tool-use hooks, configure one to intercept write operations (`Edit`, `Write`, `MultiEdit`, etc.) whose target path falls under this directory. Block by default; require explicit user approval to proceed. This is the hard lock — the harness enforces it, not the AI.
 
-For Claude Code: add a `PreToolUse` hook in your user `settings.json` that matches the write tools and checks `tool_input.file_path` against the repo path. See the Claude Code documentation on hooks for the exact schema. Other tools (Cursor, etc.) expose similar mechanisms under different names.
+For Claude Code: add a `PreToolUse` hook in your `settings.json` — either user-global (`~/.claude/settings.json`, applies to every project) or project-local (`.claude/settings.json`, scoped to one repo). Match the write tools and check `tool_input.file_path` against the repo path. See the Claude Code documentation on hooks for the exact schema. Other tools (Cursor, etc.) expose similar mechanisms under different names.
 
 ```json
 {
@@ -70,6 +70,16 @@ For Claude Code: add a `PreToolUse` hook in your user `settings.json` that match
         ]
       }
     ]
+  }
+}
+```
+
+**Configure which directories the hook protects.** `pre_edit_guard.py` reads `CLAUDE_LOCKED_DIRS` (comma-separated directory names) from the environment, defaulting to `vibe-coding-principles`. To protect different directories in your repo, set the variable in your shell or via the `env` field of `settings.json`:
+
+```json
+{
+  "env": {
+    "CLAUDE_LOCKED_DIRS": "docs/principles,specs"
   }
 }
 ```
@@ -110,6 +120,8 @@ Together they give hard enforcement where available and soft signaling where not
 
 ### Temporarily allowing a legitimate change
 
+This workflow applies to **locked-banner files only**. SPEC tests have a stricter regime — see *"Changing a SPEC-annotated test"* below.
+
 When the hook correctly blocks an edit you actually want to apply via the AI (e.g., evolving a principle, fixing a typo, adding a new rule), lift the block briefly:
 
 **Claude Code:**
@@ -121,3 +133,15 @@ When the hook correctly blocks an edit you actually want to apply via the AI (e.
 **Simpler alternative (all tools):** apply the edit yourself by hand. The LOCKED banner's rule binds AI assistants, not humans — a manual edit via your own editor is always fine and doesn't trigger any hook.
 
 The two-step friction — explicit approval to the AI *plus* toggling the hook — is intentional: it prevents any single instruction from silently changing the principles.
+
+### Changing a SPEC-annotated test
+
+SPEC tests are stricter than locked-banner files: AI must never modify, rename, delete, or strip the annotation of a `@spec` / `@pytest.mark.spec` / `[spec]` test — *regardless of any approval the human gives*. The hook-lift workflow above does not apply to spec tests.
+
+The only legitimate path to change a SPEC test:
+
+1. **The human removes the annotation themselves**, in their own editor, with no AI involvement. The test is then a normal test, not a spec.
+2. **AI may modify the now-unannotated test** like any other code, subject to the human's normal review.
+3. **The human re-applies the annotation** if and when the new behaviour has been approved as the new spec.
+
+The annotation is the boundary; while it is there, the test is the contract.

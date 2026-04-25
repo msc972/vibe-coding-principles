@@ -119,8 +119,8 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
     - **(SHOULD) Use property-based tests** for anything with a non-trivial input domain (parsers, validators, serializers, math). Tools: `hypothesis` (Python), `proptest` (Rust), `fast-check` (JS). Forces thinking in invariants and is much harder to write tautologically than example-based tests.
     - **(MUST) No exemptions for "small" code.** Mini-projects and PoCs get tests. Exploratory throwaway scripts are the only exception, and only until they're promoted to a maintained project.
 
-34. **SPEC tests are the executable specification.**
+34. **SPEC tests are the executable specification — inviolable while annotated.**
     - **(MUST) Before committing, run all tests annotated with `@spec` / `@pytest.mark.spec` / `[spec]` and ensure they pass.** Intermediate states during multi-file or iterative changes may have failing SPEC tests; the commit boundary is what matters.
-    - **(MUST) Never modify a `@spec` / `@pytest.mark.spec` / `[spec]` test to make it pass.** If one fails, fix the code or stop and confirm with the user — do not alter the expectation.
+    - **(MUST) AI must never modify, rename, delete, or strip the annotation of a `@spec` / `@pytest.mark.spec` / `[spec]` test — regardless of any approval the human gives.** No "yes, modify it" lifts this rule. The annotation is the boundary; while it is there, the test is the contract.
     - **(MUST) SPEC failures block the commit.** Do not commit or report a task as done while any `@spec` / `@pytest.mark.spec` / `[spec]` test is failing.
-    - **(MUST) Never delete a `@spec` / `@pytest.mark.spec` / `[spec]` test or strip its annotation.** Only the user may remove or un-annotate a SPEC test. The test is an executable oracle; AI-driven removal silently erases the specification.
+    - **(MUST) The only legitimate path to change a SPEC test is human-driven, two-step.** The human removes the annotation themselves first, in their own editor, with no AI involvement. The test is then a normal test and AI may modify it like any other code. The human re-applies the annotation if and when the new behaviour has been approved as the new spec.
