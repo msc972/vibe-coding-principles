@@ -12,6 +12,8 @@ Two companion documents for building software well, especially with AI coding as
 - **[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md)** — *what good code looks like.* principles covering design, readability, testing, security, and supply chain. Language-agnostic.
 - **[AI_COLLABORATION.md](AI_COLLABORATION.md)** — *how humans and AI assistants should work together.* norms covering intellectual honesty, transparency, privacy, destructive-action safety, pre-commit/pre-PR discipline, guard and hook behaviour, and testing discipline.
 - **[pre-commit-config.template.yaml](pre-commit-config.template.yaml)** — reusable pre-commit config for Python projects that mechanically enforces much of ENGINEERING_PRINCIPLES.md (lint, type, security, CVE scan, secrets, pinning).
+- **[pre_edit_guard.py](pre_edit_guard.py)** + **[pre_commit_guard.py](pre_commit_guard.py)** — Claude Code hook scripts that enforce locked-file and spec-test rules at the harness layer (see §"Locking these files against AI drift" for wiring).
+- **[pyproject.toml](pyproject.toml)** — strict ruff config (`select = ["ALL"]` + documented exceptions) for developing the hook scripts. Not shipped to consumer projects.
 
 Both `.md` files use RFC 2119 severity tags — **MUST / SHOULD / MAY** — so teams can argue about the right axis (is this a hard rule or a default?) instead of relitigating semantics every review.
 

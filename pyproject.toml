@@ -1,0 +1,16 @@
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812",  # missing trailing commas — known conflict with `ruff format`
+    "D203",    # incompatible with D211 (no blank line before class) — we keep D211
+    "D213",    # incompatible with D212 (summary on first line) — we keep D212
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Hook scripts must use print() to write the deny-JSON response on stdout (harness contract).
+# Subprocess in pre_commit_guard.py uses a fixed command list, already justified inline (# nosec B603).
+"pre_edit_guard.py" = ["T201"]
+"pre_commit_guard.py" = ["T201", "S603"]
