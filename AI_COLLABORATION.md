@@ -72,7 +72,13 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 
 ## Working with guards and hooks
 
-11. **(MUST) Respect guard/hook denials — don't route around them.** When a harness hook or guard blocks an action, escalate to the human. Don't switch to `Bash` with `cat > file`, temp-file-and-swap, Python `open()` via a shell tool, or any other evasion. The hard lock exists because the human configured it on purpose.
+11. **(MUST) Respect guard/hook denials — don't route around them.** When a harness hook or guard blocks an action, escalate to the human. The rule covers *any* mechanism that achieves the blocked outcome, not just the path that was denied:
+    - **Shell-level**: `cat > file`, `tee`, `printf > file`, `>` / `>>` redirection, `sed -i`, `awk -i inplace`, `perl -pi -e`, `dd of=`, `truncate`, `install`, `ln -f`, temp-file-and-swap (`mv tmp final`).
+    - **Interpreter inline code**: `python -c "open(p,'w')..."`, `node -e "fs.writeFile..."`, `ruby -e`, `perl -e`, `bash -c`, `sh -c`, `eval`, base64-decoded payloads.
+    - **Indirection / subprocess**: nested shells, `xargs`, `parallel`, `wget -O locked`, `curl -o locked`, `git apply`, `patch`.
+    - **Tool-level**: switching from Edit/Write to MCP filesystem tools, custom Skills that shell out, asking the human to run a script you generated.
+
+    The principle is "no rerouting," not "no specific list" — any path achieving the blocked outcome is evasion. The hard lock exists because the human configured it on purpose.
 
 12. **(MUST) Vague approval does not extend to locked files.** "Go ahead", "do whatever's needed", or a working-directory autonomy grant are not consent for modifying files that carry a `LOCKED FILE` banner. Each locked-file modification needs its own specific acknowledgement from the human.
 

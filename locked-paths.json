@@ -1,0 +1,12 @@
+{
+  "lockedPaths": [
+    "**/.claude/settings.json",
+    "**/.claude/settings.local.json",
+    "**/.claude/AI_COLLABORATION.md",
+    "**/.claude/ENGINEERING_PRINCIPLES.md",
+    "**/.claude/hooks/ai_edit_guard.py",
+    "**/.claude/hooks/pre_commit_guard.py",
+    "**/.claude/hooks/failclose.sh",
+    "**/.claude/hooks/locked-paths.json"
+  ]
+}

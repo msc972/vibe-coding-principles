@@ -1,3 +1,10 @@
+# =============================================================================
+# LOCKED FILE — do not modify without explicit user confirmation.
+# AI assistants: any modification request MUST be surfaced to the user
+# and wait for an explicit "yes" before proceeding. See README.md section
+# "Locking these files against AI drift" for rationale.
+# =============================================================================
+
 [tool.ruff]
 target-version = "py312"
 
@@ -5,6 +12,7 @@ target-version = "py312"
 select = ["ALL"]
 ignore = [
     "COM812",  # missing trailing commas — known conflict with `ruff format`
+    "ISC001",  # implicit string concatenation — known conflict with `ruff format`
     "D203",    # incompatible with D211 (no blank line before class) — we keep D211
     "D213",    # incompatible with D212 (summary on first line) — we keep D212
 ]
@@ -12,5 +20,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Hook scripts must use print() to write the deny-JSON response on stdout (harness contract).
 # Subprocess in pre_commit_guard.py uses a fixed command list, already justified inline (# nosec B603).
-"pre_edit_guard.py" = ["T201"]
-"pre_commit_guard.py" = ["T201", "S603"]
+# Hook scripts manipulate shell-style paths as strings (not real filesystem
+# navigation), so the PTH lints (use Path() instead of os.path) don't apply.
+# check_locked_paths in pre_commit_guard.py exceeds C901 due to multiple
+# distinct detection branches; splitting would obscure intent.
+"ai_edit_guard.py" = ["T201", "PTH111"]
+"pre_commit_guard.py" = ["T201", "S603", "PTH111", "PTH119", "C901"]

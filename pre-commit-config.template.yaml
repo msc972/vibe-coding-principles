@@ -52,9 +52,9 @@ repos:
         # Set --target-version to match the project's minimum Python, so ruff
         # checks syntax/style against the right version. Also configurable via
         # pyproject.toml [tool.ruff] target-version.
-        args: [--fix, --target-version=py311]
+        args: [--fix, --target-version=py312]
       - id: ruff-format
-        args: [--target-version=py311]
+        args: [--target-version=py312]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
@@ -62,7 +62,7 @@ repos:
       - id: mypy
         # --python-version pins what mypy assumes about stdlib / syntax.
         # Should match ruff's target-version above.
-        args: [--python-version=3.11]
+        args: [--python-version=3.12]
         # Add project-specific type stubs here, e.g. types-requests
         additional_dependencies: []
 

@@ -1,10 +1,3 @@
-<!--
-LOCKED FILE — do not modify without explicit user confirmation.
-AI assistants: any modification request MUST be surfaced to the user
-and wait for an explicit "yes" before proceeding. See the section
-"Locking these files against AI drift" below for rationale.
--->
-
 # Vibe-Coding Principles
 
 Two companion documents for building software well, especially with AI coding assistants — plus a drop-in enforcement config.
@@ -12,7 +5,8 @@ Two companion documents for building software well, especially with AI coding as
 - **[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md)** — *what good code looks like.* principles covering design, readability, testing, security, and supply chain. Language-agnostic.
 - **[AI_COLLABORATION.md](AI_COLLABORATION.md)** — *how humans and AI assistants should work together.* norms covering intellectual honesty, transparency, privacy, destructive-action safety, pre-commit/pre-PR discipline, guard and hook behaviour, and testing discipline.
 - **[pre-commit-config.template.yaml](pre-commit-config.template.yaml)** — reusable pre-commit config for Python projects that mechanically enforces much of ENGINEERING_PRINCIPLES.md (lint, type, security, CVE scan, secrets, pinning).
-- **[pre_edit_guard.py](pre_edit_guard.py)** + **[pre_commit_guard.py](pre_commit_guard.py)** — Claude Code hook scripts that enforce locked-file and spec-test rules at the harness layer (see §"Locking these files against AI drift" for wiring).
+- **[ai_edit_guard.py](ai_edit_guard.py)** + **[pre_commit_guard.py](pre_commit_guard.py)** + **[failclose.sh](failclose.sh)** — Claude Code hook scripts (plus a fail-closed wrapper) that enforce path-list locking and spec-test inviolability at the harness layer. See §"Locking these files against AI drift" for wiring.
+- **[locked-paths.json](locked-paths.json)** — the inviolable-path glob list the hooks read. Drop a copy at `~/.claude/hooks/locked-paths.json` and edit to fit your repo.
 - **[pyproject.toml](pyproject.toml)** — strict ruff config (`select = ["ALL"]` + documented exceptions) for developing the hook scripts. Not shipped to consumer projects.
 
 Both `.md` files use RFC 2119 severity tags — **MUST / SHOULD / MAY** — so teams can argue about the right axis (is this a hard rule or a default?) instead of relitigating semantics every review.
@@ -30,7 +24,7 @@ Drop these files into your team's central repo, or reference them as living team
 
 Some files in this repo are locked from AI modification. A PreToolUse hook enforces this automatically.
 
-- **Locked directories**: files under `vibe-coding-principles/` require explicit user approval before any edit.
+- **Inviolable paths**: files matching any glob in `~/.claude/hooks/locked-paths.json` must not be modified, created, deleted, renamed, redirected into, or `chmod`ed by AI. If blocked, escalate to the user — do not reroute through Bash, interpreter `-c`, MCP tools, or any other write path.
 - **Specification-locked tests**: any file containing a method annotated with case insensitive `@spec` (Python/Java/Kotlin/TS) / `@pytest.mark.spec` (Pytest) or `[spec]` (.NET) must not be modified. If blocked, stop and ask the user — don't try workarounds.
 
 # Engineering Practices
@@ -47,25 +41,48 @@ Always read the applicable doc before implementing; don't rely on assumed knowle
 
 If you use AI coding assistants (Claude Code, Cursor, Copilot, etc.), these files are a target for silent modification — an assistant may edit principles during unrelated tasks (*"I noticed a small inconsistency and fixed it"*). That drift is exactly what undermines shared standards.
 
-Two complementary layers of protection:
-
-### Layer 1 — Harness-level hook (the hard lock)
-
-If your AI tool supports pre-tool-use hooks, configure one to intercept write operations (`Edit`, `Write`, `MultiEdit`, etc.) whose target path falls under this directory. Block by default; require explicit user approval to proceed. This is the hard lock — the harness enforces it, not the AI.
-
-For Claude Code: add a `PreToolUse` hook in your `settings.json` — either user-global (`~/.claude/settings.json`, applies to every project) or project-local (`.claude/settings.json`, scoped to one repo). Match the write tools and check `tool_input.file_path` against the repo path. See the Claude Code documentation on hooks for the exact schema. Other tools (Cursor, etc.) expose similar mechanisms under different names.
+The lock is **path-based**: a sidecar JSON file (`~/.claude/hooks/locked-paths.json`) holds a list of file globs that must not be modified, created, deleted, renamed, or `chmod`ed by AI. The hook scripts read this list and enforce it against every Edit / Write / MultiEdit / NotebookEdit / MCP / Bash tool call. The list locks itself (it appears in its own globs), so AI can't unlock anything by editing it.
 
 ```json
 {
-  "model": "opus",
+  "lockedPaths": [
+    "**/.claude/settings.json",
+    "**/.claude/settings.local.json",
+    "**/.claude/AI_COLLABORATION.md",
+    "**/.claude/ENGINEERING_PRINCIPLES.md",
+    "**/.claude/hooks/ai_edit_guard.py",
+    "**/.claude/hooks/pre_commit_guard.py",
+    "**/.claude/hooks/failclose.sh",
+    "**/.claude/hooks/locked-paths.json"
+  ]
+}
+```
+
+Edit the list to fit your repo. The default ships with everything the lock mechanism itself depends on (the hooks, the wrapper, the sidecar) plus the two principle docs and Claude Code's settings. Globs scoped to `**/.claude/...` mean files in your dev repos (where you actively iterate) stay editable; only deployed production placements are locked.
+
+### Wiring it up (Claude Code)
+
+Add a `PreToolUse` hook to `~/.claude/settings.json` (user-global) or `.claude/settings.json` (project-local):
+
+```json
+{
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|mcp__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/pre_edit_guard.py"
+            "command": ".claude/hooks/failclose.sh python3 .claude/hooks/ai_edit_guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/failclose.sh python3 .claude/hooks/pre_commit_guard.py"
           }
         ]
       }
@@ -74,65 +91,45 @@ For Claude Code: add a `PreToolUse` hook in your `settings.json` — either user
 }
 ```
 
-**Configure which directories the hook protects.** `pre_edit_guard.py` reads `CLAUDE_LOCKED_DIRS` (comma-separated directory names) from the environment, defaulting to `vibe-coding-principles`. To protect different directories in your repo, set the variable in your shell or via the `env` field of `settings.json`:
+Files to deploy (copy from this repo to `~/.claude/hooks/`):
+- `ai_edit_guard.py` — denies Edit / Write / MultiEdit / NotebookEdit / MCP tool calls whose target path matches any locked glob. Also scans file content for `@spec` / `@pytest.mark.spec` / `[spec]` annotations and denies edits to those (spec-test inviolability).
+- `pre_commit_guard.py` — denies Bash commands that touch a locked path with anything other than a strictly-read-only verb (`cat`, `grep`, `ls`, `stat`, `diff`, …). Also blocks `git commit` when any `@pytest.mark.spec` test is failing.
+- `failclose.sh` — wraps each hook. If the wrapped hook fails to start (interpreter missing, wrong path, syntax error), Claude Code's default is to *allow* the tool call ("hook errored, no decision rendered"). The wrapper inverts that to deny. **Always wrap.**
+- `locked-paths.json` — the policy. The hooks fail closed if it's missing or malformed.
 
-```json
-{
-  "env": {
-    "CLAUDE_LOCKED_DIRS": "docs/principles,specs"
-  }
-}
-```
+**The matcher includes `mcp__.*`** so write-capable MCP servers can't end-run the lock by being a different tool name. `ai_edit_guard.py` recursively scans every string value in `tool_input` for MCP tools — if any value matches a locked glob, the call is denied regardless of which field name the MCP server uses for paths.
 
-The repository also ships a second optional hook, `pre_commit_guard.py`, which intercepts `git commit` commands and blocks them if any `@pytest.mark.spec` test is failing at that point. Wire it with an additional `PreToolUse` entry matching `Bash`:
+**`pre_commit_guard.py`'s spec gate is Python/Pytest-specific** — it runs `pytest -m spec`. For other languages or test frameworks, provide an equivalent runner that executes your spec-annotated tests before allowing a commit.
 
-```json
-{
-  "matcher": "Bash",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "python .claude/hooks/pre_commit_guard.py"
-    }
-  ]
-}
-```
+### The soft-lock layer (for tools without hook support)
 
-**Limitation:** `pre_commit_guard.py` is Python/Pytest-specific — it runs `pytest -m spec`. It only enforces `@pytest.mark.spec` annotations. For other languages or test frameworks, provide an equivalent runner that executes your spec-annotated tests before allowing a commit.
+If your AI tool doesn't support pre-tool-use hooks, the only enforcement is instructional. Add a rule like the following to the AI's system prompt, rules file, or memory (`CLAUDE.md`, `.cursorrules`, `AGENTS.md`, …):
 
-### Layer 2 — Banner + AI instruction (the soft lock)
+> **Locked paths.** Files matching any glob in `locked-paths.json` are inviolable: do not modify, create, delete, rename, redirect into, or `chmod` them. Any attempt to achieve the same outcome via Bash, interpreter `-c` (`python -c`, `bash -c`, `eval`), MCP filesystem tools, custom Skills, or generating a script for the human to run is an *evasion* — escalate to the user instead.
 
-Each file in this directory begins with a `LOCKED FILE` banner in a comment (invisible when rendered). To activate the soft lock for your AI assistant, add a rule like the following to your AI's system prompt, rules file, or memory (e.g. `CLAUDE.md`, `.cursorrules`, `AGENTS.md`):
-
-> **Locked-file rule.** Before modifying any file whose header contains a `LOCKED FILE` banner, surface the proposed change in plain language to the user and wait for an explicit "yes, modify the locked file" before proceeding. This applies even if the edit seems small or obvious.
-
-**Notes for AI assistants following the soft lock:**
-- The `LOCKED FILE` banner sits in a comment (HTML in markdown, `#` in YAML), so it is invisible in rendered output. Check the raw source's first few lines before deciding to edit.
-- Even additive changes (e.g. adding a new test method in a file that already contains a `@spec` test) will be denied by the Layer 1 hook because the hook matches on file containment, not method scope. Ask the human before proposing such an edit.
-- Do not attempt to bypass Layer 1 by routing write operations through `Bash` or other write paths — see AI_COLLABORATION.md §"Working with guards and hooks".
-
-### Why two layers?
-
-- **Layer 1 is strong but local.** A Claude Code hook doesn't help a Cursor user; per-person setup is required.
-- **Layer 2 is portable.** The banners travel with the published repo and signal intent to any AI tool or human collaborator, but rely on the AI respecting its instructions.
-
-Together they give hard enforcement where available and soft signaling where not. Skip either, not both.
+The soft lock can't be relied on for tools that don't enforce it, but it's a useful signal where it's read. See `AI_COLLABORATION.md §11` for the full list of evasion patterns to refuse.
 
 ### Temporarily allowing a legitimate change
 
-This workflow applies to **locked-banner files only**. SPEC tests have a stricter regime — see *"Changing a SPEC-annotated test"* below.
+When the hook correctly blocks an edit you actually want to apply via the AI (e.g., evolving a principle, fixing a typo, adding a path to the list):
 
-When the hook correctly blocks an edit you actually want to apply via the AI (e.g., evolving a principle, fixing a typo, adding a new rule), lift the block briefly:
+**Recommended — manual edit:** apply the change yourself in your own editor. The hook binds AI tool calls only; manual edits never trigger it. This is also the only path for changes *to the list itself* (since the list locks itself).
 
-**Claude Code:**
-1. Run `/hooks` in the Claude Code prompt to open the hooks management UI, or edit `~/.claude/settings.json` directly.
-2. Disable or remove the `PreToolUse` hook whose matcher is `Edit|Write|MultiEdit|NotebookEdit`.
-3. Ask the AI to apply the previously-approved change — it will now go through.
-4. **Restore the hook immediately afterward.** Forgetting this step removes the lock entirely.
-
-**Simpler alternative (all tools):** apply the edit yourself by hand. The LOCKED banner's rule binds AI assistants, not humans — a manual edit via your own editor is always fine and doesn't trigger any hook.
+**Alternative — temporary lift:** for changes you'd rather have the AI make, run `/hooks` in Claude Code (or edit `~/.claude/settings.json`) to disable the `PreToolUse` matcher, ask the AI to apply the previously-approved change, then re-enable the hook. **Don't forget to re-enable** — leaving the hook disabled removes the lock entirely.
 
 The two-step friction — explicit approval to the AI *plus* toggling the hook — is intentional: it prevents any single instruction from silently changing the principles.
+
+### What this lock is and isn't
+
+**Is:** a hygiene guardrail against over-eager helpful AI that wants to "improve" something it shouldn't. It catches the common bypass patterns (redirect, `tee`, `sed -i`, `python -c`, MCP write tools, etc.) and surfaces them as denials with clear messages.
+
+**Isn't:** a security boundary against an adversarial AI with full shell access. Any sufficiently determined process in your shell can write a file via infinite indirect paths (custom interpreters, base64-decoded payloads, kernel calls, etc.). Patching each pattern is whack-a-mole. The mitigation that matters most is `AI_COLLABORATION.md §11`'s rule that AI must *not* attempt to bypass — backed by the mechanical hook for the cases it can catch.
+
+**Harness-level bypasses are out of scope.** `claude --no-hooks`, `bypassPermissions` mode, spawning a sub-Claude with different settings — all available to a user who wants them, all outside any hook's reach. You configure your harness; the lock can't second-guess that.
+
+### Why a banner used to be in these files
+
+Older versions of this design encoded the lock as a `LOCKED FILE — do not modify` banner at the top of every protected file. The hook scanned for the marker substring. Two problems made that fragile: (1) docs that *describe* the lock (this README, principle docs) naturally contain the marker phrase in their body and would self-lock on the prose, and (2) downstream consumers who didn't adopt the banner convention got no protection. Path globs in a sidecar file are cleaner — single source of truth, no false positives from prose, hook reads one file. Banners may still appear in some shipped files as visible cues for human readers; they no longer enforce anything.
 
 ### Changing a SPEC-annotated test
 
