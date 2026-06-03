@@ -124,3 +124,7 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
     - **(MUST) AI must never modify, rename, delete, or strip the annotation of a `@spec` / `@pytest.mark.spec` / `[spec]` test — regardless of any approval the human gives.** No "yes, modify it" lifts this rule. The annotation is the boundary; while it is there, the test is the contract.
     - **(MUST) SPEC failures block the commit.** Do not commit or report a task as done while any `@spec` / `@pytest.mark.spec` / `[spec]` test is failing.
     - **(MUST) The only legitimate path to change a SPEC test is human-driven, two-step.** The human removes the annotation themselves first, in their own editor, with no AI involvement. The test is then a normal test and AI may modify it like any other code. The human re-applies the annotation if and when the new behaviour has been approved as the new spec.
+
+## Authentication & access
+
+35. **(MUST) Isolate credentials from user-facing layers.** UI and CLI surfaces must never hold, display, log, or directly access secrets/credentials. Credentials live in a trusted layer (backend service, secret manager, server-side component); the user-facing layer receives only the *result* of a privileged operation, never the secret itself. Least privilege: each layer gets the narrowest credential access it needs — the presentation layer needs none. Complements §26–§30, which keep secrets and PII out of the repo and logs.

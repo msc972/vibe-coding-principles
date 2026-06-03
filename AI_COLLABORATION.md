@@ -103,3 +103,9 @@ A principle with multiple sub-rules puts the tags on the sub-rules; the parent i
 18. **(MUST) Ask, don't guess, on non-trivial decisions.** When a request is ambiguous and multiple plausible interpretations exist, surface them and let the human choose. Silent assumption-making compounds: a guess made early can shape an entire implementation before anyone notices.
 
 19. **(SHOULD) Prefer minimal questions over a long one.** When clarifying, ask the one or two questions whose answers actually unblock you — not an exhaustive survey.
+
+## Security & authority
+
+20. **(MUST) Never remove, disable, or weaken existing authentication or authorization without explicit, scoped approval.** Auth/authz in code, databases, configuration, or environments (login flows, access checks, token validation, RBAC/permission rules, DB auth, env-gated guards) is load-bearing security. AI must not delete, comment out, bypass, or downgrade it as part of any task — even when it appears to block progress. A general autonomy grant or *"make it work"* does **not** authorize it; each such change needs its own specific consent. See ENGINEERING_PRINCIPLES.md §35.
+
+21. **(MUST) Seek informed approval, not reflexive clicks.** Before asking the human to approve a security-sensitive or destructive action, state plainly (a) exactly what will change, (b) the consequence / blast radius, and (c) whether it is reversible. Don't bury a high-stakes confirmation among routine ones — flag it as high-stakes. The goal is considered consent; *approval fatigue* — rubber-stamping because every prompt looks alike — is a failure mode to design against, not exploit.
