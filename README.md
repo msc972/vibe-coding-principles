@@ -6,6 +6,7 @@ Two companion documents for building software well, especially with AI coding as
 - **[AI_COLLABORATION.md](AI_COLLABORATION.md)** — *how humans and AI assistants should work together.* norms covering intellectual honesty, transparency, privacy, destructive-action safety, pre-commit/pre-PR discipline, guard and hook behaviour, and testing discipline.
 - **[pre-commit-config.template.yaml](pre-commit-config.template.yaml)** — reusable pre-commit config for Python projects that mechanically enforces much of ENGINEERING_PRINCIPLES.md (lint, type, security, CVE scan, secrets, pinning).
 - **[ai_edit_guard.py](ai_edit_guard.py)** + **[pre_commit_guard.py](pre_commit_guard.py)** + **[failclose.sh](failclose.sh)** — Claude Code hook scripts (plus a fail-closed wrapper) that enforce path-list locking and spec-test inviolability at the harness layer. See §"Locking these files against AI drift" for wiring.
+- **[session_principles_loader.py](session_principles_loader.py)** + **[session-principles.json](session-principles.json)** — a `SessionStart` hook (plus its sidecar) that injects the *full text* of the principle docs into the model's context at session start and after each context compaction, so the AI works to the principles from the first edit — not just at commit time. See §"Loading the principles at session start".
 - **[locked-paths.json](locked-paths.json)** — the inviolable-path glob list the hooks read. Drop a copy at `~/.claude/hooks/locked-paths.json` and edit to fit your repo.
 - **[pyproject.toml](pyproject.toml)** — strict ruff config (`select = ["ALL"]` + documented exceptions) for developing the hook scripts. Not shipped to consumer projects.
 
@@ -17,7 +18,7 @@ Code quality and collaboration quality are different problems. ENGINEERING_PRINC
 
 ## Usage
 
-Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. CLAUDE.md should reference these rules, so they are loaded with session start and after each conversation compact. Annotate test methods with spec attribute for Behavior/Specification tests and those tests will not be modified by AI.
+Drop these files into your team's central repo, or reference them as living team norms. They work as-is or as a starting point — adapt freely. If you change something and the change is general, consider opening a PR upstream. For the strongest guarantee that the principles are actually in context before any code change, wire the `SessionStart` loader hook (§"Loading the principles at session start"); a CLAUDE.md reference is the soft-layer fallback for tools without hook support. Annotate test methods with spec attribute for Behavior/Specification tests and those tests will not be modified by AI.
 
 ```
 # Locked files
@@ -37,6 +38,39 @@ Before making design decisions or code changes, consult the relevant practice do
 Always read the applicable doc before implementing; don't rely on assumed knowledge
 ```
 
+## Loading the principles at session start
+
+The locks below stop AI from *changing* the principles. They don't make the AI *read* them. A separate, equally costly failure mode: the assistant writes code that violates the principles and nothing catches it until the commit-time gates (or a human review) — by which point the work is already shaped wrong, and re-doing it is the expensive path. Checking only at commit is too late.
+
+`session_principles_loader.py` closes that gap. It's a Claude Code **`SessionStart`** hook: it fires on every `startup`, `resume`, `clear`, and `compact`, reads the doc list from `session-principles.json`, and injects the **full text** of each principle doc into the model's context as `additionalContext`. The principles are therefore in context *before the first edit* — at the start of each session and again after every context compaction (the point where a long session would otherwise "forget" them). Wire it via the `SessionStart` block in the settings.json snippet above.
+
+### The sidecar
+
+`session-principles.json` lists the docs to inject — the same single-source-of-truth pattern as `locked-paths.json`:
+
+```json
+{
+  "principleFiles": [
+    "~/.claude/ENGINEERING_PRINCIPLES.md",
+    "~/.claude/AI_COLLABORATION.md"
+  ]
+}
+```
+
+Paths support `~` and `$VAR` expansion. Edit them to point at wherever your docs live (a central repo checkout, `~/.claude/`, a per-project `.claude/practices/`, …). The loader and this sidecar are both in the default `locked-paths.json`, so AI can't quietly disable principle-loading by editing either.
+
+### Fail loud, not silent
+
+A `SessionStart` hook **cannot deny** the way a `PreToolUse` hook can — there's no tool call to block. So "fail closed" takes a different shape: on any misconfiguration (missing or malformed sidecar, an unreadable doc), the loader injects a prominent **`🛑 PRINCIPLES NOT LOADED`** warning into context — telling the AI not to make changes until it's fixed — instead of silently proceeding with no principles. A partial load (some docs read, others not) injects what it *could* read plus a **`⚠️ SOME PRINCIPLES FAILED TO LOAD`** notice naming the missing files.
+
+For this reason the loader is deliberately **not** wrapped in `failclose.sh`: that wrapper emits a `PreToolUse`-shaped *deny* JSON on failure, which is meaningless for a `SessionStart` event. The loader does its own fail-loud handling internally instead.
+
+**Residual gap (documented honestly):** the loader can only inject a warning if it actually runs. If the interpreter itself can't start (e.g. `python3` missing, or the script deleted), `SessionStart` produces nothing and the session proceeds with no principles *and* no warning — the same class of limitation as the harness-level bypasses noted below. The mitigation is the same: keep the hook wired and the script present (it's locked), with the commit-time gates as the backstop.
+
+### Relationship to the commit-time gate
+
+This hook **complements**, and does not replace, `pre_commit_guard.py`'s commit-time `@spec` gate and the edit-time locks. Loading is *preventative* — it works the principles into the solution from the start; the commit gate is the *last line of defence*. You want both: catching a violation at commit is correct, but catching it before it's written is cheaper.
+
 ## Locking these files against AI drift
 
 If you use AI coding assistants (Claude Code, Cursor, Copilot, etc.), these files are a target for silent modification — an assistant may edit principles during unrelated tasks (*"I noticed a small inconsistency and fixed it"*). That drift is exactly what undermines shared standards.
@@ -52,13 +86,15 @@ The lock is **path-based**: a sidecar JSON file (`~/.claude/hooks/locked-paths.j
     "**/.claude/ENGINEERING_PRINCIPLES.md",
     "**/.claude/hooks/ai_edit_guard.py",
     "**/.claude/hooks/pre_commit_guard.py",
+    "**/.claude/hooks/session_principles_loader.py",
     "**/.claude/hooks/failclose.sh",
-    "**/.claude/hooks/locked-paths.json"
+    "**/.claude/hooks/locked-paths.json",
+    "**/.claude/hooks/session-principles.json"
   ]
 }
 ```
 
-Edit the list to fit your repo. The default ships with everything the lock mechanism itself depends on (the hooks, the wrapper, the sidecar) plus the two principle docs and Claude Code's settings. Globs scoped to `**/.claude/...` mean files in your dev repos (where you actively iterate) stay editable; only deployed production placements are locked.
+Edit the list to fit your repo. The default ships with everything the lock mechanism itself depends on (the hooks, the wrapper, the sidecars) plus the two principle docs and Claude Code's settings. Locking `session_principles_loader.py` and `session-principles.json` matters: if AI could edit them it could silently stop the principles from loading (or point the loader at an empty file), defeating the session-start guarantee. Globs scoped to `**/.claude/...` mean files in your dev repos (where you actively iterate) stay editable; only deployed production placements are locked.
 
 ### Wiring it up (Claude Code)
 
@@ -86,6 +122,16 @@ Add a `PreToolUse` hook to `~/.claude/settings.json` (user-global) or `.claude/s
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/session_principles_loader.py"
+          }
+        ]
+      }
     ]
   }
 }
@@ -94,6 +140,8 @@ Add a `PreToolUse` hook to `~/.claude/settings.json` (user-global) or `.claude/s
 Files to deploy (copy from this repo to `~/.claude/hooks/`):
 - `ai_edit_guard.py` — denies Edit / Write / MultiEdit / NotebookEdit / MCP tool calls whose target path matches any locked glob. Also scans file content for `@spec` / `@pytest.mark.spec` / `[spec]` annotations and denies edits to those (spec-test inviolability).
 - `pre_commit_guard.py` — denies Bash commands that touch a locked path with anything other than a strictly-read-only verb (`cat`, `grep`, `ls`, `stat`, `diff`, …). Also blocks `git commit` when any `@pytest.mark.spec` test is failing.
+- `session_principles_loader.py` — on `SessionStart` (startup / resume / clear / compact), injects the full text of the principle docs listed in `session-principles.json` as `additionalContext`. See §"Loading the principles at session start". **Not** `failclose.sh`-wrapped — see that section for why.
+- `session-principles.json` — sidecar listing the principle docs to inject. Edit the paths to point at where your docs live.
 - `failclose.sh` — wraps each hook. If the wrapped hook fails to start (interpreter missing, wrong path, syntax error), Claude Code's default is to *allow* the tool call ("hook errored, no decision rendered"). The wrapper inverts that to deny. **Always wrap.**
 - `locked-paths.json` — the policy. The hooks fail closed if it's missing or malformed.
 
