@@ -29,12 +29,16 @@ repos:
       - id: mypy
         args: [--python-version=3.12]
         additional_dependencies: []
+        # Tests import pytest (absent from mypy's isolated env) and are loosely
+        # typed by design — type-check the shipped code, not the tests.
+        exclude: ^tests/
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.0
     hooks:
       - id: bandit
-        # No tests/ in this repo, so no exclude needed.
+        # Tests use `assert` (B101) as their core mechanism — exclude them.
+        exclude: ^tests/
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
