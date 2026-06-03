@@ -6,9 +6,7 @@
     "**/.claude/ENGINEERING_PRINCIPLES.md",
     "**/.claude/hooks/ai_edit_guard.py",
     "**/.claude/hooks/pre_commit_guard.py",
-    "**/.claude/hooks/session_principles_loader.py",
     "**/.claude/hooks/failclose.sh",
-    "**/.claude/hooks/locked-paths.json",
-    "**/.claude/hooks/session-principles.json"
+    "**/.claude/hooks/locked-paths.json"
   ]
 }

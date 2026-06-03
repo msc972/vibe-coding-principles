@@ -23,5 +23,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pytest==8.3.4
-      - run: pytest
+      - run: pip install -r requirements-dev.txt
+      # 100% branch coverage on the hook scripts is the project's stated floor.
+      - run: >-
+          pytest --cov=ai_edit_guard --cov=pre_commit_guard --cov-branch
+          --cov-report=term-missing --cov-fail-under=100

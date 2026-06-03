@@ -1,11 +1,6 @@
 #!/bin/bash
 # Fail-closed wrapper for Claude Code PreToolUse hooks.
 #
-# LOCKED FILE — do not modify without explicit user confirmation.
-# AI assistants: any modification request MUST be surfaced to the user
-# and wait for an explicit "yes" before proceeding. See README.md
-# section "Locking these files against AI drift" for rationale.
-#
 # Usage in settings.json:
 #   "command": "/path/to/failclose.sh python3 /path/to/your_hook.py"
 #

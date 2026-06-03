@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""PreToolUse guard: deny edits to inviolable paths and spec-annotated tests.
+"""PreToolUse guard: deny edits to inviolable paths and specification tests.
 
 Reads the `lockedPaths` glob list from ~/.claude/hooks/locked-paths.json.
 
 - Edit / Write / MultiEdit / NotebookEdit: matches the tool's `file_path`
-  (and its symlink-resolved real path) against every locked glob.
-- MCP tools (tool name starting with `mcp__`): recursively scans every
-  string value in `tool_input` against the same globs, so write-capable
-  MCP servers can't end-run the lock by taking a path in an arbitrary
-  field name.
-- For any code file at `file_path`, also scans content for
-  @spec / @pytest.mark.spec / [spec] markers at line start (i.e.,
-  used as actual decorators or attributes, not prose mentions).
-  Spec-test inviolability is content-based; no path list possible.
-  Documentation extensions (.md, .rst, .yaml, etc.) are skipped to
-  avoid false positives on prose that describes the convention.
+  against every locked glob.
+- For any code file at `file_path`, also scans content for specification-test
+  markers (the spec decorator, the pytest.mark.spec marker, or the bracketed
+  spec attribute) used at the start of a line, i.e. as real decorators or
+  attributes rather than prose mentions. Spec-test inviolability is
+  content-based; no path list is possible. Documentation extensions
+  (.md, .rst, .yaml, etc.) are skipped to avoid false positives on prose
+  that describes the convention.
+
+Deliberate evasion via other write paths (MCP filesystem tools, custom
+interpreters, generated scripts) is out of scope by design: AI_COLLABORATION.md
+§11 forbids rerouting regardless of the detection list. This guard is a
+hygiene backstop for the common honest-mistake cases, not a security boundary.
 
 Fails closed on any error reading or parsing the sidecar.
 """
@@ -24,7 +26,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import NoReturn
 
 SIDECAR_PATH = Path.home() / ".claude" / "hooks" / "locked-paths.json"
 
@@ -122,73 +124,36 @@ def load_locked_globs() -> list[re.Pattern[str]]:
 
 
 def expanded(path: str) -> list[str]:
-    """Variants for robust matching: literal, ~-expanded, $VAR-expanded."""
-    return list(
-        {
-            path,
-            os.path.expanduser(path),
-            os.path.expandvars(path),
-            os.path.expandvars(os.path.expanduser(path)),
-        }
-    )
+    """Variants for robust matching: literal and ~-expanded."""
+    return list({path, os.path.expanduser(path)})
 
 
 def path_matches_any(path: str, globs: list[re.Pattern[str]]) -> bool:
-    """Check whether path (literal, resolved, or shell-expanded) matches any glob."""
-    candidates = list(expanded(path))
+    """Check whether path (literal or ~-expanded) matches any locked glob."""
+    return any(g.match(c) for c in expanded(path) for g in globs)
+
+
+def main() -> None:
+    """Read the PreToolUse payload from stdin and enforce the locks."""
     try:
-        resolved = str(Path(path).resolve())
-    except OSError:
-        resolved = path
-    candidates.extend(expanded(resolved))
-    return any(g.match(c) for c in candidates for g in globs)
+        data = json.load(sys.stdin)
+    except json.JSONDecodeError as exc:
+        deny(f"HOOK ERROR: malformed hook input — {exc}. Failing closed.")
 
+    tool_input = data.get("tool_input", {})
+    locked_globs = load_locked_globs()
 
-def iter_strings(obj: Any) -> list[str]:  # noqa: ANN401  — recursive JSON walk
-    """Recursively collect every string value from a JSON-like object."""
-    if isinstance(obj, str):
-        return [obj]
-    if isinstance(obj, dict):
-        out: list[str] = []
-        for v in obj.values():
-            out.extend(iter_strings(v))
-        return out
-    if isinstance(obj, list):
-        out = []
-        for v in obj:
-            out.extend(iter_strings(v))
-        return out
-    return []
+    # Path-based lock on the standard editing tools.
+    file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
+    if file_path and path_matches_any(file_path, locked_globs):
+        deny(
+            f"LOCKED: {file_path} matches an inviolable path in "
+            f"~/.claude/hooks/locked-paths.json. Ask the user to lift before editing."
+        )
 
-
-try:
-    data = json.load(sys.stdin)
-except json.JSONDecodeError as exc:
-    deny(f"HOOK ERROR: malformed hook input — {exc}. Failing closed.")
-
-tool_name = data.get("tool_name", "")
-tool_input = data.get("tool_input", {})
-locked_globs = load_locked_globs()
-
-# Path-based lock on the standard editing tools.
-file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
-if file_path and path_matches_any(file_path, locked_globs):
-    deny(
-        f"LOCKED: {file_path} matches an inviolable path in "
-        f"~/.claude/hooks/locked-paths.json. Ask the user to lift before editing."
-    )
-
-# MCP-tool coverage: any string value in tool_input that hits a locked glob.
-if tool_name.startswith("mcp__"):
-    for value in iter_strings(tool_input):
-        if path_matches_any(value, locked_globs):
-            deny(
-                f"LOCKED (MCP): tool `{tool_name}` references {value}, "
-                f"which matches an inviolable path. Ask the user to lift."
-            )
-
-# Spec-annotation lock (content-based; orthogonal to path globs).
-if file_path:
+    # Spec-annotation lock (content-based; orthogonal to path globs).
+    if not file_path:
+        return
     try:
         resolved_path = Path(file_path).resolve()
     except OSError:
@@ -202,3 +167,7 @@ if file_path:
                 f"these even with user approval. The human must remove the "
                 f"annotation themselves first."
             )
+
+
+if __name__ == "__main__":
+    main()

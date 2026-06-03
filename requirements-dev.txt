@@ -1,0 +1,8 @@
+# Dev/test dependencies — pinned, treat like a lockfile (bump deliberately).
+#
+# The shipped hook scripts (ai_edit_guard.py, pre_commit_guard.py) use only the
+# Python standard library, so there are no runtime dependencies. These packages
+# are needed only to run the test suite. Lint / type / security tools are pinned
+# separately in .pre-commit-config.yaml (pre-commit installs them itself).
+pytest==9.0.3
+pytest-cov==6.0.0

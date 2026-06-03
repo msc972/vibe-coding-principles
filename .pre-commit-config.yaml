@@ -45,3 +45,12 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
+
+  # Known-CVE scan on the pinned dev/test dependencies (the only deps this repo
+  # has; the shipped hooks are pure stdlib). Bump the pins in requirements-dev.txt
+  # when a fix version is reported — same policy as any lockfile bump.
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        args: [--strict, --requirement, requirements-dev.txt]

@@ -2,7 +2,7 @@
 target-version = "py312"
 
 [tool.ruff.lint.isort]
-known-first-party = ["session_principles_loader"]
+known-first-party = ["ai_edit_guard", "pre_commit_guard"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -22,15 +22,21 @@ ignore = [
 # distinct detection branches; splitting would obscure intent.
 "ai_edit_guard.py" = ["T201", "PTH111"]
 "pre_commit_guard.py" = ["T201", "S603", "PTH111", "PTH119", "C901"]
-# session_principles_loader.py writes its JSON payload to stdout via print().
-"session_principles_loader.py" = ["T201"]
 # Test files: asserts are the point (S101); pytest fixtures and example values
 # don't need docstrings/annotations (D, ANN) or named constants (PLR2004); the
-# tests/ dir is an implicit namespace package by design (INP001).
-"tests/*" = ["S101", "D", "ANN", "PLR2004", "INP001"]
+# tests/ dir is an implicit namespace package by design (INP001); side-effect
+# fixtures and monkeypatch lambdas have intentionally unused args (ARG).
+"tests/*" = ["S101", "D", "ANN", "PLR2004", "INP001", "ARG"]
+
+[tool.coverage.report]
+# The module-level entrypoint guard runs only when invoked as a script, not
+# under import-based tests; excluding it keeps the branch-coverage aim honest.
+exclude_also = [
+    "if __name__ == .__main__.:",
+]
 
 [tool.pytest.ini_options]
-# Make the repo root importable so tests can `import session_principles_loader`.
+# Make the repo root importable so tests can import the guard modules.
 pythonpath = ["."]
 testpaths = ["tests"]
 # Registering the marker keeps `pytest -m spec` (the commit gate) warning-free.
