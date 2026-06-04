@@ -2,6 +2,12 @@
 
 Two short standards documents for building software well — especially with AI coding assistants — plus optional Claude Code hooks that keep the AI honest about them.
 
+## The why, why, why
+
+An AI agent does what you ask of it. However, an AI agent does not do what you do not ask it to do. Users often forget to specify requirements related to security, privacy, data destruction, coding standards, and more. An AI agent tries hard to achieve its goal, even at the cost of rewriting large portions of code, modifying tests to make them pass, or changing or removing configuration and authentication mechanisms that stand in the way. When an AI agent prepares a solution based on a user prompt, it has only a limited understanding of the project’s overall goals, standards, and guardrails.
+
+In terms of collaboration, an AI agent can be stubborn and may repeatedly apply changes that the user does not want. However, when the AI agent detects a strong emotional response or repeated requests from the user, it may yield and perform actions that are not in the best interest of the project. It may expose PII and authentication artifacts to users or logs without hesitation. It may also remove authentication, fail to add it when needed, destroy a production database, or change configurations to bypass complex security guardrails.
+
 ## The documents
 
 - **[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md)** — what good code looks like: design, readability, testing, security, supply chain. Language-agnostic, RFC-2119 tagged (MUST / SHOULD / MAY).
@@ -76,4 +82,4 @@ CI (`.github/workflows/ci.yml`) runs both on every push and PR — the repo dogf
 
 ## What this is and isn't
 
-A hygiene guardrail against over-eager AI, **not** a security boundary. It catches the common cases (direct edits, basic shell writes); it doesn't chase every exotic bypass — `AI_COLLABORATION.md §11` covers the rest by forbidding rerouting outright. Harness-level escapes (`--no-hooks`, bypass mode) are out of scope by definition.
+A hygiene guardrail against over-eager AI, **not** a security boundary. It catches the common cases (direct edits, basic shell writes); it doesn't chase every exotic bypass — `AI_COLLABORATION.md §11` covers the rest by forbidding rerouting outright. Harness-level escapes (`--no-hooks`, bypass mode) are out of scope by definition. In general, testing showed that it was impossible to fully prevent AI agents from bypassing agreed engineering practices. A more effective approach was to surface potentially problematic actions to the user for review and approval, rather than relying on heavy restrictions that the AI would attempt to work around.
