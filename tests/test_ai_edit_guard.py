@@ -94,7 +94,8 @@ def test_load_globs_skips_non_string_entries(tmp_path, monkeypatch):
 
 
 def test_expanded_includes_home_expansion(monkeypatch):
-    monkeypatch.setenv("HOME", "/home/u")
+    monkeypatch.setenv("HOME", "/home/u")  # POSIX
+    monkeypatch.setenv("USERPROFILE", "/home/u")  # Windows
     assert "/home/u/x" in g.expanded("~/x")
 
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Suggestions, corrections, and bug reports are welcome — these documents and hooks improve through real-world use.
+Suggestions, corrections, and bug reports are welcome – these documents and hooks improve through real-world use.
 
 ## Open an issue
 
@@ -23,4 +23,4 @@ If you'd like to submit a change directly:
    pip install pre-commit && pre-commit run --all-files
    ```
 
-Contributions are offered under the repository's [LICENSE](LICENSE).
+Contributions are offered under the repository's licenses: documentation under [CC BY 4.0](LICENSE), code under the [MIT License](LICENSE-CODE).
